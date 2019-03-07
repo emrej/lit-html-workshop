@@ -21,6 +21,10 @@
 
         // import LitElement from the unpkg CDN as a module, it makes this code work anywhere
         import {css, html, LitElement} from 'https://unpkg.com/lit-element@2.0.1?module';
+        import 'https://unpkg.com/@polymer/paper-card/paper-card.js?module';
+        import 'https://unpkg.com/@polymer/paper-fab@3.0.1/paper-fab.js?module';
+        import 'https://unpkg.com/@polymer/paper-button/paper-button.js?module';
+        import 'https://unpkg.com/@polymer/iron-icons@3.0.1/iron-icons?module';
 
         // LitElement and html are the basic required imports
         // import { LitElement, html, css} from 'lit-element';
@@ -35,15 +39,25 @@
                 // Return the template using the html template tag. lit-html will parse the template and
                 // create the DOM elements
                 return html`
+                    <div>
+                      <paper-button raised type="button" @click=${() => this.filter = 'all'}>all</paper-button>
+                      <paper-button raised type="button" @click=${() => this.filter = 'read'}>read (${this.getFilteredArticles('read').length})</paper-button>
+                      <paper-button raised type="button" @click=${() => this.filter = 'unread'}>unread (${this.getFilteredArticles('unread').length})</paper-button>
+                    </div>
 
-                    ${this.articles.map(article => html`
-                        <my-article
-                            @toggled=${this.toggleReadStatus}
-                            .read=${article.read}
-                            .title=${article.title}
-                            .description=${article.description}
-                            .id=${article.id}>
-                        </my-article>
+
+                    ${this.articles.filter((article) => {
+                        if (this.filter === 'read') return article.read;
+                        if (this.filter === 'unread') return !article.read;
+                        if (this.filter === 'all') return true;
+                        }).map(article => html`
+                            <my-article
+                                @toggled=${this.toggleReadStatus}
+                                .read=${article.read}
+                                .title=${article.title}
+                                .description=${article.description}
+                                .id=${article.id}>
+                            </my-article>
                     `)}
                 `;
             }
@@ -51,18 +65,27 @@
             constructor() {
                 super();
                 this.articles = [];
+                this.filter = 'all';
             }
 
             static get properties() {
                 return {
                     articles: { type: Array },
-                    count: { type: Number },
+                    filter: { type: String }
                 };
             }
 
             toggleReadStatus(e) {
                 this.articles[e.detail].read = !this.articles[e.detail].read;
                 this.requestUpdate();
+            }
+
+            getFilteredArticles(filter) {
+                return this.articles.filter((article) => {
+                    if (filter === 'read') return article.read;
+                    if (filter === 'unread') return !article.read;
+                    if (filter === 'all') return true;
+                });
             }
 
             connectedCallback() {
@@ -101,7 +124,7 @@
 
                     <p>${this.description}</p>
 
-                    <button type="button" @click=${this.toggleRead}>${this.read ? 'unread' : 'read'}</button>
+                    <paper-button raised type="button" @click=${this.toggleRead}>${this.read ? 'unread' : 'read'}</paper-button>
                 `;
             }
         }
