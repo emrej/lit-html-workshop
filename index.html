@@ -1,181 +1,116 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width">
-  <title>Demo</title>
-  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta content="width=device-width" name="viewport">
 
-   <style>
-      body {
-        font-family: 'Roboto';
-        background-color: #f2f2f2;
-      }
-   </style>
+    <script type="module">
+        /**
+         * Assignment 1:
+         * Create a LitElement component that prints 'hello world'
+         *
+         * - Create a web component which extends from LitElement
+         * - Implement a render method, which returns a lit-html template
+         * - Register your element using customElements.define
+         * - Add your element to the <body> so that it will become visible
+         *
+         * Check out the README.md for reference documentation
+         *
+         * Copy paste into plnkr: http://plnkr.co/edit/DI9312Rn54NuIH7FRzzD?p=preview
+         */
+
+        // import LitElement from the unpkg CDN as a module, it makes this code work anywhere
+        import {css, html, LitElement} from 'https://unpkg.com/lit-element@2.0.1?module';
+
+        // LitElement and html are the basic required imports
+        // import { LitElement, html, css} from 'lit-element';
+
+        // Create a class definition for your component and extend the LitElement base class
+        class BasicSetup extends LitElement {
+            // The render callback renders your element's template. This should be a pure function,
+            // it should always return the same template given the same properties. It should not perform
+            // any side effects such as setting properties or manipulating the DOM. See the updated
+            // or first-updated examples if you need side effects.
+            render() {
+                // Return the template using the html template tag. lit-html will parse the template and
+                // create the DOM elements
+                return html`
+
+                    ${this.articles.map(article => html`
+                        <my-article
+                            @toggled=${this.toggleReadStatus}
+                            .read=${article.read}
+                            .title=${article.title}
+                            .description=${article.description}
+                            .id=${article.id}>
+                        </my-article>
+                    `)}
+                `;
+            }
+
+            constructor() {
+                super();
+                this.articles = [];
+            }
+
+            static get properties() {
+                return {
+                    articles: { type: Array },
+                    count: { type: Number },
+                };
+            }
+
+            toggleReadStatus(e) {
+                this.articles[e.detail].read = !this.articles[e.detail].read;
+                this.requestUpdate();
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                fetch('https://newsapi.org/v2/everything?q=weather&from=2019-03-03&sortBy=publishedAt&apiKey=d4a27b21c29a4e569e90ca80927a9945')
+                // the response is a stream, we need to parse it as json first
+                    .then(r => r.json())
+                    .then((r) => {
+                        this.articles = r.articles.map((article, i) => ({ ...article, id: i, read: false }));
+                    });
+            }
+        }
+
+        // Register your element to custom elements registry, pass it a tag name and your class definition
+        // The element name must always contain at least one dash
+        customElements.define('basic-setup', BasicSetup);
+
+
+        class Article extends LitElement {
+            static get properties() {
+                return {
+                    title: { type: String },
+                    description: { type: String },
+                    read: { type: Boolean },
+                    id: { type: Number }
+                };
+            }
+
+            toggleRead() {
+                this.dispatchEvent(new CustomEvent('toggled', { detail: this.id }));
+            }
+
+            render() {
+                return html`
+                    <h5>${this.id} - ${this.title}</h5>
+
+                    <p>${this.description}</p>
+
+                    <button type="button" @click=${this.toggleRead}>${this.read ? 'unread' : 'read'}</button>
+                `;
+            }
+        }
+
+        customElements.define('my-article', Article);
+    </script>
 </head>
+
 <body>
-  <demo-app></demo-app>
-
-<script type="module">
-  /* eslint-disable */
-  import { LitElement, html, css } from 'https://unpkg.com/lit-element@2.0.1?module';
-  import 'https://unpkg.com/@polymer/paper-card/paper-card.js?module';
-  import 'https://unpkg.com/@polymer/paper-fab@3.0.1/paper-fab.js?module';
-  import 'https://unpkg.com/@polymer/paper-button/paper-button.js?module';
-  import 'https://unpkg.com/@polymer/iron-icons@3.0.1/iron-icons?module';
-
-  class DemoApp extends LitElement {
-    static get properties() {
-      return {
-        stories: { type: Array },
-        filter: { type: String },
-      };
-    }
-
-    static get styles() {
-      return [
-        css`
-          :host {
-            display: flex;
-            flex-direction: column;
-          }
-          .stories {
-            display: flex;
-            flex-direction: column;
-          }
-          my-article {
-            margin: 10px;
-          }
-          header {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-          }
-        `,
-      ];
-    }
-
-    constructor() {
-      super();
-      this.stories = [];
-      this.filter = 'all';
-    }
-
-    connectedCallback() {
-      super.connectedCallback();
-      fetch('https://newsapi.org/v2/everything?q=weather&from=2019-03-03&sortBy=publishedAt&apiKey=0067878edf7d4084a6557032dbd0cab1')
-        .then(r => r.json())
-        .then((r) => {
-          this.stories = r.articles.map((article, i) => ({ ...article, id: i, read: false }));
-        });
-    }
-
-    _toggleReadStatus(e) {
-      this.stories[e.detail].read = !this.stories[e.detail].read;
-      this.requestUpdate();
-    }
-
-    getFilteredStories(filter) {
-      return this.stories.filter((article) => {
-        if (filter === 'read') return article.read;
-        if (filter === 'unread') return !article.read;
-        if (filter === 'all') return true;
-      });
-    }
-
-    render() {
-      return html`
-          <header>
-            <h1>The News</h1>
-            <div>
-              <paper-button raised @click=${() => this.filter = 'all'}>all</paper-button>
-              <paper-button raised @click=${() => this.filter = 'read'}>read (${this.getFilteredStories('read').length})</paper-button>
-              <paper-button raised @click=${() => this.filter = 'unread'}>unread (${this.getFilteredStories('unread').length})</paper-button>
-            </div>
-            </header>
-          <div class="stories">
-            ${this.stories.filter((article) => {
-              if (this.filter === 'read') return article.read;
-              if (this.filter === 'unread') return !article.read;
-              if (this.filter === 'all') return true;
-            }).map(article => html`
-              <my-article
-                @toggled=${this._toggleReadStatus}
-                .read=${article.read}
-                .title=${article.title}
-                .description=${article.description}
-                .id=${article.id}>
-              </my-article>`)}
-          </div>
-        `;
-    }
-  }
-
-  customElements.define('demo-app', DemoApp);
-
-  class Article extends LitElement {
-    static get properties() {
-      return {
-        title: { type: String },
-        description: { type: String },
-        read: { type: Boolean },
-        id: { type: Number },
-      };
-    }
-
-    static get styles() {
-      return [
-        css`
-          :host {
-            display: flex;
-            flex: 1;
-          }
-          paper-card {
-            flex: 1;
-            padding: 15px;
-            border-radius: 10px;
-          }
-          .header {
-            display: flex;
-          }
-          .header h2 {
-            flex: 1;
-            margin-right: 25px;
-          }
-          .buttons {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          }
-        `,
-      ];
-    }
-
-    _toggleRead() {
-      this.dispatchEvent(new CustomEvent('toggled', { detail: this.id }));
-    }
-
-    render() {
-      return html`
-        <paper-card>
-          <div class="header">
-            <h2>${this.title}</h2>
-            <div class="buttons">
-              ${this.read
-      ? html`<paper-fab @click=${this._toggleRead} mini icon="icons:visibility"></paper-fab>`
-      : html`<paper-fab @click=${this._toggleRead} mini icon="icons:visibility-off"></paper-fab>`
-  }
-            </div>
-          </div>
-          <p>${this.description}</p>
-        </paper-card>
-      `;
-    }
-  }
-
-  customElements.define('my-article', Article);
-</script>
+    <basic-setup></basic-setup>
 </body>
 </html>
